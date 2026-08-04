@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="th" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Funding sources by STeP</title>
+  
+  <!-- Tailwind CSS v4 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  
+  <!-- FontAwesome for Premium Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Custom Premium Styles -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <style type="text/tailwindcss">
+    @custom-variant dark (&:where(.dark, .dark *));
+    
+    @theme {
+      --color-brand-primary: var(--accent);
+      --color-brand-hover: var(--accent-hover);
+    }
+  </style>
+</head>
+<body class="bg-[var(--bg-primary)] text-[var(--text-primary)] min-h-screen flex flex-col md:flex-row overflow-x-hidden">
+
+  <!-- Notification Toast Container -->
+  <div id="notification-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+  <!-- Mobile Top Bar (Only visible on mobile) -->
+  <div class="md:hidden flex items-center justify-between px-6 py-4 bg-slate-950 text-white border-b border-slate-800 z-30 w-full">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-yellow-500 text-black flex items-center justify-center shadow-lg shadow-yellow-500/20">
+        <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
+      </div>
+      <span class="font-bold tracking-wide text-sm font-display">Funding sources by STeP</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <button id="theme-toggle-mobile" onclick="setTheme(STATE.theme === 'dark' ? 'light' : 'dark')" class="p-2 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-circle-half-stroke"></i>
+      </button>
+      <button id="sidebar-toggle" class="p-2 text-slate-400 hover:text-white focus:outline-none">
+        <i class="fa-solid fa-bars text-xl"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar Navigation -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 sidebar-gradient text-slate-300 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-40 flex flex-col border-r border-slate-800/80 md:relative md:h-screen">
+    
+    <!-- Sidebar Header -->
+    <div class="px-6 py-6 border-b border-slate-800/60 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-yellow-500 text-black flex items-center justify-center shadow-lg shadow-yellow-500/25">
+          <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-white tracking-wider text-base font-display">Funding sources by STeP</h1>
+          <span class="text-[10px] text-slate-500 tracking-widest font-mono">v1.2.0 (INTERNAL)</span>
+        </div>
+      </div>
+      <button id="sidebar-close" class="md:hidden text-slate-500 hover:text-white">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+      <p class="px-3 text-[10px] font-semibold text-slate-600 dark:text-slate-500 uppercase tracking-widest mb-2 font-display">หลัก (Main)</p>
+      
+      <button data-nav-tab="dashboard" class="w-full flex items-center gap-3.5 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 text-slate-400 hover:bg-slate-800/50 hover:text-white cursor-pointer group">
+        <i class="fa-solid fa-chart-line text-slate-400 group-hover:text-white transition-colors"></i>
+        <span>Dashboard</span>
+      </button>
+      
+      <button data-nav-tab="directory" class="w-full flex items-center gap-3.5 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 text-slate-400 hover:bg-slate-800/50 hover:text-white cursor-pointer group">
+        <i class="fa-solid fa-folder-tree text-slate-400 group-hover:text-white transition-colors"></i>
+        <span>Grants Directory</span>
+      </button>
+      
+      <button data-nav-tab="saved" class="w-full flex items-center gap-3.5 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 text-slate-400 hover:bg-slate-800/50 hover:text-white cursor-pointer group">
+        <i class="fa-solid fa-bookmark text-slate-400 group-hover:text-white transition-colors"></i>
+        <span>Saved Grants</span>
+        <span id="sidebar-saved-badge" class="ml-auto px-2 py-0.5 text-[10px] font-bold rounded-full bg-yellow-500/10 text-yellow-400">0</span>
+      </button>
+
+      <div class="pt-6">
+        <p class="px-3 text-[10px] font-semibold text-slate-600 dark:text-slate-500 uppercase tracking-widest mb-2 font-display">เครื่องมือและวิเคราะห์</p>
+      </div>
+
+      <button data-nav-tab="analytics" class="w-full flex items-center gap-3.5 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 text-slate-400 hover:bg-slate-800/50 hover:text-white cursor-pointer group">
+        <i class="fa-solid fa-chart-pie text-slate-400 group-hover:text-white transition-colors"></i>
+        <span>Analytics Reports</span>
+      </button>
+      
+      <button data-nav-tab="settings" class="w-full flex items-center gap-3.5 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 text-slate-400 hover:bg-slate-800/50 hover:text-white cursor-pointer group">
+        <i class="fa-solid fa-sliders text-slate-400 group-hover:text-white transition-colors"></i>
+        <span>Settings</span>
+      </button>
+    </nav>
+
+    <!-- Sidebar Footer / User Profile -->
+    <div class="p-4 border-t border-slate-800/60 bg-slate-950/30">
+      <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-900/40 border border-slate-800/50">
+        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop" alt="User Avatar" class="w-9 h-9 rounded-full object-cover border border-yellow-500/30">
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold text-white truncate">DKK</p>
+          <p class="text-[10px] text-slate-500 truncate">Major information technology</p>
+        </div>
+        <div class="text-slate-500 text-xs">
+          <i class="fa-solid fa-circle text-emerald-500 text-[8px] animate-pulse"></i>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area Wrapper -->
+  <main class="flex-1 flex flex-col min-h-screen overflow-y-auto">
+    
+    <!-- Top Bar -->
+    <header class="sticky top-0 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] px-6 py-4 z-20 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between shadow-sm">
+      
+      <!-- Left side: Search and Title -->
+      <div class="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+        <div>
+          <h2 id="page-title" class="text-lg md:text-xl font-extrabold tracking-tight text-slate-800 dark:text-white">แดชบอร์ด</h2>
+          <span class="text-xs text-slate-400 dark:text-slate-500">ข้อมูลอัปเดตอัตโนมัติจาก AI Extractor</span>
+        </div>
+        
+        <!-- Search bar -->
+        <div class="relative w-full max-w-md ml-0 sm:ml-6">
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
+            <i class="fa-solid fa-magnifying-glass text-sm"></i>
+          </span>
+          <input 
+            type="text" 
+            id="global-search" 
+            placeholder="ค้นหาแหล่งทุน (คีย์เวิร์ด, หน่วยงาน, เกณฑ์)..." 
+            class="w-full pl-10 pr-4 py-2 text-sm bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 dark:text-slate-100 transition-all placeholder-slate-400 dark:placeholder-slate-500"
+          >
+        </div>
+      </div>
+
+      <!-- Right side: Filters, Theme, Notifications -->
+      <div class="flex items-center flex-wrap gap-3">
+        
+        <!-- Filter Agency -->
+        <select id="filter-agency" class="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:text-slate-200">
+          <option value="All">ทุกแหล่งทุน (Agencies)</option>
+        </select>
+        
+        <!-- Filter Category -->
+        <select id="filter-category" class="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:text-slate-200">
+          <option value="All">ทุกหมวดหมู่ (Categories)</option>
+        </select>
+        
+        <!-- Filter Status -->
+        <select id="filter-status" class="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:text-slate-200">
+          <option value="All">สถานะทั้งหมด</option>
+          <option value="Active">เปิดรับสมัคร (Active)</option>
+          <option value="Expired">หมดเขตแล้ว (Expired)</option>
+        </select>
+
+        <!-- Utility Buttons -->
+        <div class="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block"></div>
+
+        <button id="theme-toggle" class="p-2 text-slate-500 dark:text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors hidden sm:block" title="เปลี่ยนธีม">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+
+        <button class="p-2 text-slate-500 dark:text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors relative" title="การแจ้งเตือน">
+          <i class="fa-solid fa-bell"></i>
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Dynamic Content Workspace -->
+    <div class="flex-1 p-6 space-y-6">
+      
+      <!-- Metrics Overview Cards (Visible across tabs, but can hide in Analytics or Settings if preferred) -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Active Grants -->
+        <div id="dashboard-active-card" class="glass-panel p-5 rounded-2xl flex items-center justify-between cursor-pointer hover:border-yellow-500 group">
+          <div>
+            <span class="text-xs font-semibold text-slate-400 dark:text-slate-500">แหล่งทุนเปิดรับสมัคร</span>
+            <h3 id="metric-active-count" class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-white mt-1 group-hover:text-yellow-500 transition-colors">0</h3>
+            <span class="text-[10px] text-emerald-500 font-medium flex items-center gap-1 mt-1">
+              <i class="fa-solid fa-arrow-trend-up"></i>
+              <span>อัปเดตล่าสุดวันนี้</span>
+            </span>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center justify-center">
+            <i class="fa-solid fa-circle-check text-xl"></i>
+          </div>
+        </div>
+
+        <!-- New This Week -->
+        <div class="glass-panel p-5 rounded-2xl flex items-center justify-between">
+          <div>
+            <span class="text-xs font-semibold text-slate-400 dark:text-slate-500">ตรวจพบใหม่ในสัปดาห์นี้</span>
+            <h3 id="metric-new-count" class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-white mt-1">0</h3>
+            <span class="text-[10px] text-yellow-500 font-medium flex items-center gap-1 mt-1">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>ประมวลผลโดย AI</span>
+            </span>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-yellow-500/10 text-yellow-600 dark:bg-yellow-500/20 dark:text-yellow-400 flex items-center justify-center">
+            <i class="fa-solid fa-sparkles text-xl animate-pulse"></i>
+          </div>
+        </div>
+
+        <!-- Upcoming Deadlines (< 7 days) -->
+        <div id="dashboard-urgent-card" class="glass-panel p-5 rounded-2xl flex items-center justify-between cursor-pointer hover:border-rose-500 group">
+          <div>
+            <span class="text-xs font-semibold text-slate-400 dark:text-slate-500">ใกล้วันปิดรับสมัคร (&lt; 7 วัน)</span>
+            <div class="flex items-center gap-2 mt-1">
+              <h3 id="metric-urgent-count" class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-white group-hover:text-rose-500 transition-colors">0</h3>
+              <span id="metric-urgent-pulse" class="hidden w-2 h-2 rounded-full bg-rose-500 pulse-urgent"></span>
+            </div>
+            <span class="text-[10px] text-rose-500 font-medium flex items-center gap-1 mt-1">
+              <i class="fa-solid fa-circle-exclamation"></i>
+              <span>ควรเร่งด่วนศึกษา</span>
+            </span>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-500 dark:bg-rose-500/20 dark:text-rose-400 flex items-center justify-center">
+            <i class="fa-solid fa-clock text-xl"></i>
+          </div>
+        </div>
+
+        <!-- Total Bookmarked / Applied -->
+        <div class="glass-panel p-5 rounded-2xl flex items-center justify-between">
+          <div>
+            <span class="text-xs font-semibold text-slate-400 dark:text-slate-500">ทุนที่บันทึก / ยื่นขอแล้ว</span>
+            <h3 id="metric-saved-count" class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-white mt-1">0</h3>
+            <span class="text-[10px] text-slate-500 font-medium flex items-center gap-1 mt-1">
+              <i class="fa-solid fa-heart"></i>
+              <span>บันทึกในโปรไฟล์ของคุณ</span>
+            </span>
+          </div>
+          <div class="w-12 h-12 rounded-xl bg-yellow-500/10 text-yellow-600 dark:bg-yellow-500/20 dark:text-yellow-400 flex items-center justify-center">
+            <i class="fa-solid fa-box-archive text-xl"></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- PANELS (Tab Switcher Containers) -->
+
+      <!-- TAB 1: Dashboard View -->
+      <div data-tab-content="dashboard" class="space-y-6">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Recent Grants Grid (Left 2 columns) -->
+          <div class="lg:col-span-2 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                  <i class="fa-solid fa-fire text-amber-500"></i> ทุนตรวจพบล่าสุดที่น่าสนใจ (Featured Grants)
+                </h3>
+                <p class="text-xs text-slate-400 dark:text-slate-500">ทุนวิจัยที่ AI แนะนำสอดคล้องกับหัวข้อหลักขององค์กร</p>
+              </div>
+              <button onclick="setTab('directory')" class="text-xs font-bold text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300">
+                ดูทั้งหมด <i class="fa-solid fa-chevron-right ml-1"></i>
+              </button>
+            </div>
+
+            <!-- Grant Grid Container -->
+            <div id="recent-grants-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Rendered Dynamically in app.js -->
+            </div>
+          </div>
+
+          <!-- Quick AI Insights Panel (Right 1 column) -->
+          <div class="space-y-4">
+            <div>
+              <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-yellow-500"></i> AI Extraction Insights
+              </h3>
+              <p class="text-xs text-slate-400 dark:text-slate-500">ข้อมูลสรุปแนวโน้มทุนวิจัยปัญญาประดิษฐ์</p>
+            </div>
+
+            <div class="glass-panel p-5 rounded-2xl space-y-4">
+              
+              <!-- Sentiment / Aggregation Summary Box -->
+              <div class="space-y-3">
+                <div class="p-3 bg-yellow-500/5 dark:bg-yellow-500/5 border border-yellow-500/20 dark:border-yellow-500/25 rounded-xl">
+                  <h4 class="text-xs font-bold text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5 mb-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI Summary (วันนี้)
+                  </h4>
+                  <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    ขณะนี้พบแหล่งทุนวิจัยและนวัตกรรมมุ่งเน้นด้าน <strong class="text-yellow-600 dark:text-yellow-400">Deep Tech และ AI ในการแพทย์</strong> สูงสุด คิดเป็น 40% ของแหล่งทุนเปิดใหม่ในสัปดาห์นี้
+                  </p>
+                </div>
+              </div>
+
+              <!-- Top Keywords Tag Cloud -->
+              <div>
+                <h4 class="text-xs font-bold text-slate-700 dark:text-slate-400 mb-2">คำสืบค้นยอดนิยม (Trending Topics)</h4>
+                <div class="flex flex-wrap gap-2">
+                  <span class="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 dark:bg-slate-800/80 rounded-lg text-slate-600 dark:text-slate-300">#SmartFarming</span>
+                  <span class="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 dark:bg-slate-800/80 rounded-lg text-slate-600 dark:text-slate-300">#MedicalAI</span>
+                  <span class="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 dark:bg-slate-800/80 rounded-lg text-slate-600 dark:text-slate-300">#DeepLearning</span>
+                  <span class="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 dark:bg-slate-800/80 rounded-lg text-slate-600 dark:text-slate-300">#บพข</span>
+                  <span class="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 dark:bg-slate-800/80 rounded-lg text-slate-600 dark:text-slate-300">#HorizonEurope</span>
+                </div>
+              </div>
+
+              <!-- Processing Queue status -->
+              <div class="border-t border-slate-100 dark:border-slate-800/60 pt-4 space-y-2">
+                <h4 class="text-xs font-bold text-slate-700 dark:text-slate-400 flex items-center justify-between">
+                  <span>สถานะการสแกน PDF แหล่งทุน</span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-400">ปกติ</span>
+                </h4>
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between text-[10px] text-slate-500">
+                    <span>วิเคราะห์โดยเฉลี่ย/วัน</span>
+                    <span class="font-bold text-slate-700 dark:text-slate-300">45 ฉบับ</span>
+                  </div>
+                  <div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-yellow-500 h-full rounded-full" style="width: 82%"></div>
+                  </div>
+                  <span class="text-[9px] text-slate-500 block">สแกนครั้งถัดไป: <strong>ในอีก 2 ชั่วโมง</strong></span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- TAB 2: Grants Directory View -->
+      <div data-tab-content="directory" class="space-y-4 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-800 dark:text-white">สารบบแหล่งทุนทั้งหมด</h3>
+            <p class="text-xs text-slate-400 dark:text-slate-500">สแกน รวบรวม และแยกแยะข้อมูลโดยระบบ AI วิเคราะห์เอกสารประกาศทุนวิจัย</p>
+          </div>
+        </div>
+
+        <div id="directory-grants-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Rendered Dynamically in app.js -->
+        </div>
+      </div>
+
+      <!-- TAB 3: Saved Grants View -->
+      <div data-tab-content="saved" class="space-y-4 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-800 dark:text-white">แหล่งทุนที่บันทึกไว้</h3>
+            <p class="text-xs text-slate-400 dark:text-slate-500">รายการทุนที่คุณบุ๊กมาร์กไว้เพื่อเข้าถึงด่วนหรือดำเนินการเตรียมยื่นข้อเสนอโครงการ</p>
+          </div>
+        </div>
+
+        <div id="saved-grants-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Rendered Dynamically in app.js -->
+        </div>
+      </div>
+
+      <!-- TAB 4: Analytics View -->
+      <div data-tab-content="analytics" class="space-y-6 hidden">
+        <div>
+          <h3 class="text-base font-bold text-slate-800 dark:text-white">รายงานวิเคราะห์เชิงสถิติ (Grant Analytics Dashboard)</h3>
+          <p class="text-xs text-slate-400 dark:text-slate-500">ข้อมูลสถิติลักษณะเฉพาะของแหล่งทุนวิจัยที่รวบรวมได้ภายในระบบ</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- Chart Card 1 -->
+          <div class="glass-panel p-5 rounded-2xl flex flex-col h-[320px] lg:h-[380px]">
+            <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-1.5">
+              <i class="fa-solid fa-chart-pie text-yellow-500"></i> สัดส่วนแหล่งทุนจำแนกตามหน่วยงานหลัก
+            </h4>
+            <div class="flex-1 relative">
+              <canvas id="chart-agencies"></canvas>
+            </div>
+          </div>
+          
+          <!-- Chart Card 2 -->
+          <div class="glass-panel p-5 rounded-2xl flex flex-col h-[320px] lg:h-[380px]">
+            <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-1.5">
+              <i class="fa-solid fa-chart-bar text-yellow-500"></i> มูลค่าทุนเฉลี่ยจำแนกตามหมวดหมู่วิจัย (ล้านบาท)
+            </h4>
+            <div class="flex-1 relative">
+              <canvas id="chart-categories"></canvas>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TAB 5: Settings View -->
+      <div data-tab-content="settings" class="max-w-2xl mx-auto hidden">
+        <div class="glass-panel p-6 rounded-2xl space-y-6">
+          
+          <div>
+            <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <i class="fa-solid fa-sliders text-yellow-500"></i> ตั้งค่าตัวสแกนและ AI ดึงข้อมูล
+            </h3>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">กำหนดค่าความสนใจ คีย์เวิร์ด และช่องทางการสแกนสำหรับทีมภายในองค์กร</p>
+          </div>
+
+          <form id="settings-form" class="space-y-5">
+            
+            <!-- AI Subscriptions Keywords -->
+            <div class="space-y-2">
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-400">คีย์เวิร์ดสแกนแหล่งทุนที่สนใจหลัก (AI Keywords Focus)</label>
+              <input 
+                type="text" 
+                value="artificial intelligence, deep learning, smart farming, ปัญญาประดิษฐ์, นวัตกรรมเชิงพาณิชย์" 
+                class="w-full px-4 py-2.5 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:text-slate-100"
+              >
+              <p class="text-[10px] text-slate-400 dark:text-slate-500">คีย์เวิร์ดหลักที่ใช้ในโปรแกรม Crawler เพื่อตรวจหาคำศัพท์ในเอกสารประกาศของหน่วยงานรัฐและเอกชน</p>
+            </div>
+
+            <!-- Frequency Setup -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-400">ความถี่ของการสแกน (Crawl Frequency)</label>
+                <select class="w-full px-4 py-2.5 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:text-slate-100">
+                  <option value="hourly">ทุกๆ 1 ชั่วโมง (บ่อยที่สุด)</option>
+                  <option value="6hours" selected>ทุกๆ 6 ชั่วโมง</option>
+                  <option value="daily">ทุกวัน (เที่ยงคืน)</option>
+                  <option value="weekly">ทุกสัปดาห์</option>
+                </select>
+              </div>
+
+              <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-400">เกณฑ์ความแม่นยำขั้นต่ำสำหรับการจัดทำรายงาน (Min Confidence Threshold)</label>
+                <select class="w-full px-4 py-2.5 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:text-slate-100">
+                  <option value="90" selected>90% หรือสูงกว่า (แนะนำ)</option>
+                  <option value="85">85% หรือสูงกว่า</option>
+                  <option value="80">80% หรือสูงกว่า (ครอบคลุมขึ้น แต่มีโอกาสผิดพลาดสูง)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Notifications Preferences -->
+            <div class="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800/60">
+              <h4 class="text-xs font-bold text-slate-700 dark:text-slate-400">ช่องทางส่งการแจ้งเตือนด่วน (Alert channels)</h4>
+              
+              <div class="space-y-2.5">
+                <label class="flex items-center gap-2.5 cursor-pointer text-xs text-slate-600 dark:text-slate-300">
+                  <input type="checkbox" checked class="rounded border-slate-300 dark:border-slate-800 text-yellow-600 focus:ring-yellow-500">
+                  <span>ส่งการแจ้งเตือนทาง LINE Notify เมื่อตรวจพบทุนเร่งด่วนปิดรับสมัครน้อยกว่า 7 วัน</span>
+                </label>
+                
+                <label class="flex items-center gap-2.5 cursor-pointer text-xs text-slate-600 dark:text-slate-300">
+                  <input type="checkbox" checked class="rounded border-slate-300 dark:border-slate-800 text-yellow-600 focus:ring-yellow-500">
+                  <span>ส่งสรุปรายงานรายสัปดาห์ (Weekly Aggregator Digest) เข้ากล่องอีเมลของทีม</span>
+                </label>
+                
+                <label class="flex items-center gap-2.5 cursor-pointer text-xs text-slate-600 dark:text-slate-300">
+                  <input type="checkbox" class="rounded border-slate-300 dark:border-slate-800 text-yellow-600 focus:ring-yellow-500">
+                  <span>เชื่อมข้อมูลรายงานเข้าสู่ Slack / Teams Channel ทันที</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Submit buttons -->
+            <div class="pt-4 flex justify-end gap-2.5">
+              <button type="button" onclick="showNotification('เรียกใช้งานระบบจัดทำสารบบใหม่ด้วยข้อมูลล่าสุด...', 'success')" class="px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl transition-all">
+                <i class="fa-solid fa-rotate-right mr-1"></i> สแกนใหม่ด้วยตนเอง (Manual Trigger)
+              </button>
+              <button type="submit" class="px-5 py-2.5 text-xs font-bold text-black bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-500 dark:hover:bg-yellow-400 rounded-xl shadow transition-all">
+                <i class="fa-solid fa-floppy-disk mr-1"></i> บันทึกค่าระบบ
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- DETAIL MODAL: Slide-out drawer from the right -->
+  <div id="modal-overlay" class="fixed inset-0 z-50 hidden items-center justify-end modal-overlay">
+    
+    <!-- Drawer Container -->
+    <div id="modal-container" class="w-full max-w-xl h-full bg-[var(--bg-secondary)] border-l border-[var(--border-color)] shadow-2xl flex flex-col translate-x-full transition-transform duration-300 ease-out modal-content">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-5 border-b border-[var(--border-color)] flex items-center justify-between bg-slate-50 dark:bg-slate-900/40">
+        <div class="flex items-center gap-2">
+          <span id="modal-agency" class="inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full bg-yellow-500/10 text-yellow-600 dark:bg-yellow-500/20 dark:text-yellow-400">บพข.</span>
+          <span id="modal-category" class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300">Deep Tech</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="modal-save-btn" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors text-slate-700 dark:text-slate-300">
+            <i class="fa-regular fa-bookmark"></i>
+            <span>บันทึกแหล่งทุน</span>
+          </button>
+          <button id="close-modal-btn" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all focus:outline-none">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Scrollable Content -->
+      <div class="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        
+        <!-- Grant Title Header -->
+        <div>
+          <h2 id="modal-title" class="text-lg md:text-xl font-extrabold text-slate-800 dark:text-white leading-snug">
+            ทุนพัฒนาและแปลงระบบโครงสร้างพื้นฐานระบบปัญญาประดิษฐ์เพื่อการประยุกต์เชิงพาณิชย์
+          </h2>
+        </div>
+
+        <!-- Key Stats Banner Grid -->
+        <div class="grid grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-100 dark:border-slate-800/35">
+          <div class="space-y-0.5">
+            <span class="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">วงเงินสนับสนุนสูงสุด</span>
+            <p id="modal-funding" class="text-sm md:text-base font-bold text-yellow-600 dark:text-yellow-400">สูงสุด 15,000,000 บาท</p>
+          </div>
+          <div class="space-y-0.5">
+            <span class="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">วันปิดรับข้อเสนอ</span>
+            <p id="modal-deadline" class="text-sm md:text-base font-bold text-slate-800 dark:text-slate-200">12 ส.ค. 2569</p>
+          </div>
+        </div>
+
+        <!-- Section: Objectives -->
+        <div class="space-y-2.5">
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-bullseye text-yellow-500"></i> วัตถุประสงค์โครงการ (Objectives)
+          </h3>
+          <ul id="modal-objectives" class="space-y-2">
+            <!-- Rendered Dynamically -->
+          </ul>
+        </div>
+
+        <!-- Section: Eligibility -->
+        <div class="space-y-2.5">
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-id-card text-yellow-500"></i> เกณฑ์ผู้มีสิทธิ์ยื่นข้อเสนอ (Eligibility Criteria)
+          </h3>
+          <ul id="modal-eligibility" class="space-y-2">
+            <!-- Rendered Dynamically -->
+          </ul>
+        </div>
+
+        <!-- Section: Submission Guidelines -->
+        <div class="space-y-2.5">
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-list-ol text-yellow-500"></i> ขั้นตอนการยื่นสมัคร (Submission Guidelines)
+          </h3>
+          <ul id="modal-guidelines" class="space-y-2">
+            <!-- Rendered Dynamically -->
+          </ul>
+        </div>
+
+        <!-- AI Accuracy Meta details -->
+        <div class="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800/40 space-y-1.5">
+          <div class="flex justify-between items-center text-[10px] text-slate-500">
+            <span>ความน่าเชื่อถือจากการวิเคราะห์ (AI Extractor Confidence)</span>
+            <span id="modal-ai-confidence" class="font-bold text-emerald-500 dark:text-emerald-400">98%</span>
+          </div>
+          <div class="flex justify-between items-center text-[10px] text-slate-500">
+            <span>วันและเวลาดึงข้อมูลล่าสุด (Last Scanned & Extracted)</span>
+            <span id="modal-ai-extracted" class="font-mono text-slate-700 dark:text-slate-400">2026-08-03 09:12</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal CTA Footer Actions -->
+      <div class="px-6 py-4 border-t border-[var(--border-color)] bg-slate-50 dark:bg-slate-900/40 flex items-center justify-between">
+        <a 
+          id="modal-pdf-link" 
+          href="#" 
+          target="_blank" 
+          class="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl transition-all"
+        >
+          <i class="fa-solid fa-file-pdf text-rose-500 text-sm"></i>
+          <span>ดูประกาศทางการ (PDF / URL)</span>
+        </a>
+        
+        <button 
+          onclick="showNotification('กำลังนำทางไปยังช่องทางการสมัคร NRIIS / ระบบหลัก...', 'success')" 
+          class="inline-flex items-center gap-1.5 px-5 py-2.5 text-xs font-bold text-black bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-500 dark:hover:bg-yellow-400 rounded-xl shadow-md transition-all"
+        >
+          <span>ยื่นข้อเสนอโครงการ</span>
+          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Load Dashboard JS App Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
